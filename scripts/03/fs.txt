@@ -1,0 +1,171 @@
+-- TOAST
+CREATE TABLE toast_test (id SERIAL, value TEXT);
+SELECT relname, reltoastrelid FROM pg_class WHERE relname = 'toast_test';
+SELECT relname FROM pg_class WHERE oid = 16393;
+\d pg_toast.pg_toast_16389
+-- chunk_id: A reference to a toasted value.
+-- chunk_seq: A sequence within the chunk.
+-- chunk_data: The actual chunk data.
+
+SELECT
+    n.nspname || '.' || c.relname AS table_name,
+    pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size,
+    pg_size_pretty(pg_total_relation_size(c.reltoastrelid)) AS toast_size
+FROM pg_class c
+JOIN pg_namespace n
+    ON c.relnamespace = n.oid
+WHERE
+    relname = 'toast_test';
+
+INSERT INTO toast_test (value) VALUES ('small value');
+SELECT * FROM pg_toast.pg_toast_16389;
+
+INSERT INTO toast_test (value) VALUES (repeat(' ', 4097));
+SELECT * FROM pg_toast.pg_toast_16389;
+
+INSERT INTO toast_test (value) VALUES (repeat('s', 400097));
+SELECT count(*) FROM pg_toast.pg_toast_16389;
+SELECT chunk_id, chunk_seq, length(chunk_data) FROM pg_toast.pg_toast_16389;
+
+CREATE OR REPLACE FUNCTION generate_random_string(
+  length INTEGER,
+  characters TEXT default '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+) RETURNS TEXT AS
+$$
+DECLARE
+  result TEXT := '';
+BEGIN
+  IF length < 1 then
+      RAISE EXCEPTION 'Invalid length';
+  END IF;
+  FOR __ IN 1..length LOOP
+    result := result || substr(characters, floor(random() * length(characters))::int + 1, 1);
+  end loop;
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+INSERT INTO toast_test (value) VALUES (generate_random_string(1024 * 10));
+
+SELECT chunk_id, COUNT(*) as chunks, pg_size_pretty(sum(octet_length(chunk_data)::bigint))
+FROM pg_toast.pg_toast_16389 GROUP BY 1 ORDER BY 1;
+
+TRUNCATE toast_test;
+
+-- JSONB
+\timing
+CREATE TABLE t AS
+SELECT i AS id, (SELECT jsonb_object_agg(j, j) FROM generate_series(1, 1000) j) js
+FROM generate_series(1, 10000) i;
+
+SELECT oid::regclass AS heap_rel,
+       pg_size_pretty(pg_relation_size(oid)) AS heap_rel_size,
+       reltoastrelid::regclass AS toast_rel,
+       pg_size_pretty(pg_relation_size(reltoastrelid)) AS toast_rel_size
+FROM pg_class WHERE relname = 't';
+
+\d+ t
+SELECT pg_current_wal_lsn();
+UPDATE t SET id = id + 1;
+SELECT pg_current_wal_lsn();
+SELECT pg_size_pretty(pg_wal_lsn_diff('0/570A9D0','0/5596680')) AS wal_size;
+
+
+SELECT pg_current_wal_lsn();
+UPDATE t SET js = js::jsonb || '{"a":1}';
+SELECT pg_current_wal_lsn();
+SELECT pg_size_pretty(pg_wal_lsn_diff('0/C14E840','0/5718798')) AS wal_size;
+
+-- Это займет 12 секунд, то есть станет в 300 раз медленней, а размер  WAL увеличится до 130 Мб вместо 1,5 Мб. 
+-- Хранилище TOAST соответственно увеличилось в 2 раза.  То есть, мы сделали маленький апдейт и у нас сразу же возникли проблемы. 
+SELECT oid::regclass AS heap_rel,
+       pg_size_pretty(pg_relation_size(oid)) AS heap_rel_size,
+       reltoastrelid::regclass AS toast_rel,
+       pg_size_pretty(pg_relation_size(reltoastrelid)) AS toast_rel_size
+FROM pg_class WHERE relname = 't';
+
+-- имеем распухание - bloating
+-- pluggable TOAST - комьюнити не приняло(
+-- https://habr.com/ru/companies/postgrespro/articles/710104/
+будет распухать до х4 - связано с механизмом хранения
+\d+ pg_toast.pg_toast_74512
+
+-- extended disk
+-- добавим 150 GB SSD - x1.5 IOPS
+
+lsblk
+sudo fdisk /dev/sdb
+
+lsblk
+-- LVM
+sudo apt install lvm2
+
+sudo pvcreate /dev/sdb1
+sudo pvdisplay
+
+sudo vgcreate vol /dev/sdb1
+sudo vgdisplay
+
+sudo lsblk -o NAME,FSTYPE,LABEL,UUID,MOUNTPOINT
+
+sudo lvcreate -l+100%FREE vol
+
+sudo lvrename /dev/vol/lvol0 /dev/vol/newpostgre 
+
+sudo mkfs.xfs -f /dev/vol/newpostgre
+
+sudo mkdir -p /newpostgres
+
+sudo mount -o rw /dev/vol/newpostgre /newpostgres
+
+sudo nano /etc/fstab
+/dev/vol/newpostgre          /newpostgres                   xfs     defaults        0 0
+
+sudo chown postgres:postgres /newpostgres
+sudo -u postgres mkdir /newpostgres/data
+sudo -u postgres pg_createcluster 16 main2 --datadir /newpostgres/data
+
+sudo -u postgres pg_ctlcluster 16 main2 start
+
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+
+-- для main2
+pg_ctlcluster 16 main2 start
+cd ~ && wget https://storage.googleapis.com/thaibus/thai_small.tar.gz && tar -xf thai_small.tar.gz && psql -p 5433 < thai.sql
+
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
+
+-- workload2
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
+
+-- !!! перенос WAL файлов
+mkdir /newpostgres/wal
+
+pg_ctlcluster 16 main stop
+mv /var/lib/postgresql/16/main/pg_wal /newpostgres/wal
+
+ln -s /newpostgres/wal/pg_wal /var/lib/postgresql/16/main/pg_wal
+ls /newpostgres/wal/pg_wal
+ls /var/lib/postgresql/16/main/pg_wal
+
+pg_ctlcluster 16 main start
+pg_lsclusters
+
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+

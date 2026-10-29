@@ -1,0 +1,202 @@
+-- явные транзакции
+cat > ~/workload.sql << EOL
+begin;
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+commit;
+EOL
+
+cat > ~/workload2.sql << EOL
+begin;
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r+100000;
+commit;
+EOL
+
+-- автокоммит
+cat > ~/workload3.sql << EOL
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+EOL
+
+cat > ~/workload4.sql << EOL
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r+100000;
+EOL
+
+-- явные транзакции с ROLLBACK
+cat > ~/workload5.sql << EOL
+begin;
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+rollback;
+EOL
+
+cat > ~/workload6.sql << EOL
+begin;
+\set r random(1, 6000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r+100000;
+rollback;
+EOL
+
+------------------------------------
+psql -c "DROP DATABASE thai;"
+cd ~ && wget https://storage.googleapis.com/thaibus/thai_medium.tar.gz && tar -xf thai_medium.tar.gz && psql < thai.sql
+
+-- в 1 клиента в 1 поток
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+-- 7500
+
+-- посмотрим на влияние оборачивания селекта в транзакцию
+-- должно быть в 2 раза меньше 
+/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+-- 3500
+
+!!!! commit VS autocommit VS rollback
+
+-- 10 клиентов
+-- 4 потока по числу ядер
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+-- 24000
+
+-- 10 клиентов
+-- 4 потока по числу ядер
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+-- 13500
+
+-- посмотрим autocommit
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload3.sql -U postgres thai
+--38000
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload4.sql -U postgres thai
+--19000
+
+-- разница c rollback
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload5.sql -U postgres thai
+--24000
+
+/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload6.sql -U postgres thai
+--14600
+
+-- FREEZE
+-- Query to show your current transaction ages:
+psql -d thai
+
+with overridden_tables as (
+  select
+    pc.oid as table_id,
+    pn.nspname as scheme_name,
+    pc.relname as table_name,
+    pc.reloptions as options
+  from pg_class pc
+  join pg_namespace pn on pn.oid = pc.relnamespace
+  where reloptions::text ~ 'autovacuum'
+), per_database as (
+  select
+    coalesce(nullif(n.nspname || '.', 'public.'), '') || c.relname as relation,
+    greatest(age(c.relfrozenxid), age(t.relfrozenxid)) as age,
+    round(
+      (greatest(age(c.relfrozenxid), age(t.relfrozenxid))::numeric *
+      100 / (2 * 10^9 - current_setting('vacuum_freeze_min_age')::numeric)::numeric),
+      2
+    ) as capacity_used,
+    c.relfrozenxid as rel_relfrozenxid,
+    t.relfrozenxid as toast_relfrozenxid,
+    (greatest(age(c.relfrozenxid), age(t.relfrozenxid)) > 1200000000)::int as warning,
+    case when ot.table_id is not null then true else false end as overridden_settings
+  from pg_class c
+  join pg_namespace n on c.relnamespace = n.oid
+  left join pg_class t ON c.reltoastrelid = t.oid
+  left join overridden_tables ot on ot.table_id = c.oid
+  where c.relkind IN ('r', 'm') and not (n.nspname = 'pg_catalog' and c.relname <> 'pg_class')
+    and n.nspname <> 'information_schema'
+  order by 3 desc)
+SELECT *
+FROM per_database;
+
+-- посмотреть блоатинг(раздутость) индекса
+psql -c "drop database if exists index_bloat;"
+psql -c "create database index_bloat;"
+pgbench -i -s 10 index_bloat
+psql index_bloat -c "CREATE EXTENSION pgstattuple;"
+psql index_bloat -c "\d+ pgbench_accounts";
+psql index_bloat -c "SELECT * FROM pgstatindex('pgbench_accounts_pkey');"
+psql index_bloat -c "UPDATE pgbench_accounts set bid = bid + 2000000;"
+psql index_bloat -c "UPDATE pgbench_accounts set aid = aid + 2000000;"
+psql index_bloat
+SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::float "ratio%", last_autovacuum FROM pg_stat_user_TABLEs WHERE relname = 'pgbench_accounts';
+VACUUM pgbench_accounts;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+
+VACUUM FULL pgbench_accounts; -- на хайлоаде невозможно - требует исключительной блокировки всей таблицы
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+
+REINDEX INDEX CONCURRENTLY pgbench_accounts_pkey;
+-- и снова обновим все записи и посмотрим что будет
+UPDATE pgbench_accounts set bid = bid + 2000000;
+UPDATE pgbench_accounts set aid = aid + 2000000;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+VACUUM pgbench_accounts;
+UPDATE pgbench_accounts set bid = bid + 2000000;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+VACUUM pgbench_accounts;
+UPDATE pgbench_accounts set aid = aid + 2000000;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+VACUUM pgbench_accounts;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+
+REINDEX INDEX CONCURRENTLY pgbench_accounts_pkey;
+SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+
+
+
+
+-- проверим тайминги при перестроении большого мат.вью на 60 млн.записей
+-- https://www.postgresql.org/docs/current/sql-refreshmaterializedview.html
+\timing
+REFRESH MATERIALIZED VIEW ms as SELECT * from book.tickets;
+-- 70s
+
+-- посмотрим нагрузку из другого сеанса
+gcloud compute ssh postgres4
+htop
+
+--sudo -u postgres psql -d thai
+
+
+SELECT * FROM ms limit 1;
+
+
+-- index unique on MAT VIEW!!!
+CREATE UNIQUE INDEX ui ON ms(id);
+-- 50s
+
+-- во 2 экране видим параллельное создание индексов
+
+
+REFRESH MATERIALIZED VIEW CONCURRENTLY ms WITH DATA;
+-- во 2 окне видим CREATE MATVIEW !!! - в 1 поток !!! - еще и ядра переключаются !!!
+-- 383s !!!!
+
+REFRESH MATERIALIZED VIEW CONCURRENTLY ms WITH NO DATA;
+-- ERROR:  CONCURRENTLY and WITH NO DATA options cannot be used together
+REFRESH MATERIALIZED VIEW ms WITH NO DATA;
+-- 1.3 s !!!!
+SELECT count(*) from ms;
+-- ERROR:  MATERIALIZED VIEW "ms" has not been populated
+-- а данных то и нет )))
+REFRESH MATERIALIZED VIEW ms;
+-- 104s !!!
+REFRESH MATERIALIZED VIEW ms2 as SELECT * from book.tickets;
+-- 63
+DROP MATERIALIZED VIEW ms;
+-- 1.4s
+ALTER MATERIALIZED VIEW ms2 rename to ms;
+-- 1s
+
+
+
+

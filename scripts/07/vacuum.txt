@@ -1,0 +1,104 @@
+-- VACUUM
+BEGIN;
+SELECT * FROM test LIMIT 1;
+
+UPDATE test set i = 600 WHERE i = 1;
+
+SELECT * FROM deadratio;
+
+-- 2 Window
+sudo -u postgres psql -c "VACUUM FULL test;"
+
+sudo -u postgres psql -c "VACUUM test;"
+
+
+-- 3 эксперимент
+-- 1 terminal
+BEGIN;
+UPDATE test set i = 600 WHERE i = 2;
+
+
+-- 2 terminal
+VACUUM test;
+
+-- 1 terminal
+commit;
+SELECT * FROM heap_page_items(get_raw_page('test',0)) \gx
+
+VACUUM test;
+SELECT * FROM heap_page_items(get_raw_page('test',0)) \gx
+
+-- автовакуум
+SELECT name, setting, context, short_desc FROM pg_settings WHERE category like '%Autovacuum%';
+
+-- первый показатель показывает приближение проблемы
+-- второй показывает когда запустится автоматический автофриз
+-- https://www.crunchydata.com/blog/managing-transaction-id-wraparound-in-postgresql
+WITH max_age AS ( 
+    SELECT 2000000000 as max_old_xid
+        , setting AS autovacuum_freeze_max_age 
+        FROM pg_catalog.pg_settings 
+        WHERE name = 'autovacuum_freeze_max_age' )
+, per_database_stats AS ( 
+    SELECT datname
+        , m.max_old_xid::int
+        , m.autovacuum_freeze_max_age::int
+        , age(d.datfrozenxid) AS oldest_current_xid 
+    FROM pg_catalog.pg_database d 
+    JOIN max_age m ON (true) 
+    WHERE d.datallowconn ) 
+SELECT max(oldest_current_xid) AS oldest_current_xid
+    , max(ROUND(100*(oldest_current_xid/max_old_xid::float))) AS percent_towards_wraparound
+    , max(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac 
+FROM per_database_stats;
+
+
+
+SELECT datname
+    , age(datfrozenxid)
+    , current_setting('autovacuum_freeze_max_age') 
+FROM pg_database 
+ORDER BY 2 DESC;
+
+-- посмотрим максимальный возраст для наших таблиц
+SELECT c.oid::regclass as table_name,
+       greatest(age(c.relfrozenxid),age(t.relfrozenxid)) as age
+FROM pg_class c
+LEFT JOIN pg_class t ON c.reltoastrelid = t.oid
+WHERE c.relkind IN ('r', 'm');
+
+-- stats
+SELECT * FROM pg_stats WHERE tablename='test' \gx
+
+CREATE TABLE test2(i serial, b text);
+INSERT INTO test2(b) VALUES ('apple');
+SELECT * FROM pg_stats WHERE tablename='test2' \gx
+-- почему не видим статистики?
+VACUUM test2;
+SELECT * FROM pg_stats WHERE tablename='test2' \gx
+
+VACUUM ANALYZE test2;
+SELECT * FROM pg_stats WHERE tablename='test2' \gx
+
+
+SELECT * FROM pg_stat_all_tables WHERE relname='test' \gx
+
+
+
+
+-- !!! work_mem !!!
+show work_mem;
+\d+ test
+
+-- погенерируем и посмотрим на память
+INSERT INTO test SELECT s.id FROM generate_series(1,1000000000) AS s(id);
+
+-- по факту пошли в тем тейбл спейс и пошли тратить диск
+\! ls -la /var/lib/postgresql/16/main/base/pgsql_tmp
+
+-- https://www.postgresql.org/docs/current/runtime-config-resource.html
+show temp_file_limit;
+
+
+
+
