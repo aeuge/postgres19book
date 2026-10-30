@@ -50,7 +50,7 @@ https://aristov.tech/blog/varianty-ustanovki-postgresql/
 47. old snapshot problem2 https://github.com/postgres/postgres/blob/REL_13_STABLE/src/backend/utils/time/snapmgr.c#L1808C33-L1808C33 
 48. https://dataegret.com/2018/04/lets-speed-things-up/ 
 49. cybertec конфигуратор https://pgconfigurator.cybertec.at/ 
-50. default settings https://github.com/aeuge/Postgres16book/blob/main/scripts/01/settings.txt 
+50. default settings https://github.com/aeuge/Postgres19book/blob/main/scripts/01/settings.txt 
 51. Tuning PostgreSQL https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server 
 52. Tuning PostgreSQL https://www.crunchydata.com/blog/optimize-postgresql-server-performance 
 53. Tuner https://github.com/jfcoz/postgresqltuner 

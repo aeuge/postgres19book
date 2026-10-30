@@ -1,5 +1,5 @@
 # Тюнинг WAL & shared_buffers
-01. PostgreSQL 14. Оптимизация, Kubernetes, кластера, облака. - М.: ООО «Сам Полиграфист», 2022. - 576 с. URL: https://aristov.tech/PostgreSQL14preview.pdf 
+01. PostgreSQL 18 для архитекторов систем URL: https://aristov.tech/PostgreSQL18preview.pdf 
 02. Cluster index https://en.wikipedia.org/wiki/Database_index 
 03. Cluster https://www.postgresql.org/docs/16/sql-cluster.html 
 04. Ctid convert https://dba.stackexchange.com/questions/65964/how-do-i-decompose-ctid-into-page-and-row-numbers 

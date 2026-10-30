@@ -14,6 +14,6 @@
 13. Pg_stat_statements https://www.postgresql.org/docs/current/pgstatstatements.html 
 14. Pg_stat_reporter https://github.com/ossc-db/pg_stats_reporter/blob/main/html/pg_stats_reporter/doc/pg_stats_reporter.md 
 15. Work_mem https://postgresqlco.nf/doc/en/param/work_mem/ 
-16. Аристов Евгений. PostgreSQL 14. Оптимизация, Kubernetes, кластера, облака. - М.: ООО «Сам Полиграфист», 2022. - 576 с. URL: https://aristov.tech/PostgreSQL14preview.pdf
+16. PostgreSQL 18 для архитекторов систем URL: https://aristov.tech/PostgreSQL18preview.pdf
 17. Deadlock https://en.wikipedia.org/wiki/Deadlock 
 

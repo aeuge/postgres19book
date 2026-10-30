@@ -23,7 +23,7 @@
 22. Структура Btree https://neerc.ifmo.ru/wiki/index.php?title=B-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE 
 23. Fillfactor https://www.postgresql.org/docs/current/sql-createindex.html#INDEX-RELOPTION-FILLFACTOR 
 24. Btree delete https://iq.opengenus.org/b-tree-deletion/ 
-25. PostgreSQL 14. Оптимизация, Kubernetes, кластера, облака. - М.: ООО «Сам Полиграфист», 2022. - 576 с. URL: https://aristov.tech/PostgreSQL14preview.pdf 
+25. PostgreSQL 18 для архитекторов систем URL: https://aristov.tech/PostgreSQL18preview.pdf
 26. Статьи про индексы https://habr.com/ru/companies/postgrespro/articles/340978/ 
 27. Nullable unique https://www.db-fiddle.com/f/honZUi6C2aQmNd3HZbUTqt/3 
 28. Nullable FK https://www.db-fiddle.com/f/honZUi6C2aQmNd3HZbUTqt/4 

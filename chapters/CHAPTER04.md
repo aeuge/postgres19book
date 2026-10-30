@@ -17,7 +17,7 @@
 16. PG replication by Percona https://www.percona.com/blog/postgresql-synchronous_commit-options-and-synchronous-standby-replication/ 
 17. Synchronous_commit https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-SYNCHRONOUS-COMMIT 
 18. Internal VPC https://en.wikipedia.org/wiki/Virtual_private_cloud 
-19. default settings https://github.com/aeuge/Postgres16book/blob/main/scripts/01/settings.txt 
+19. default settings https://github.com/aeuge/Postgres19book/blob/main/scripts/01/settings.txt 
 20. synchronous_standby_names https://postgresqlco.nf/doc/en/param/synchronous_standby_names/ 
 21. Quorum https://en.wikipedia.org/wiki/Quorum 
 22. logical_decoding_work_mem https://www.percona.com/blog/logical-replication-decoding-improvements-in-postgresql-13-and-14/ 
