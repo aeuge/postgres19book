@@ -1,5 +1,5 @@
 # Настройка бэкапов и репликации
-01. PostgreSQL14. Оптимизация, Kubernetes, кластера, облака. https://aristov.tech/PostgreSQL14preview.pdf 
+01. PostgreSQL18 для архитекторов систем. https://aristov.tech/PostgreSQL18preview.pdf 
 02. snapshot https://en.wikipedia.org/wiki/Snapshot 
 03. Data Domain https://www.delltechnologies.com/asset/en-ae/products/data-protection/technical-support/h11340-datadomain-ss.pdf 
 04. Data deduplication https://en.wikipedia.org/wiki/Data_deduplication 
