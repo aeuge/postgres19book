@@ -1,8 +1,9 @@
 # Настройка ВМ, ОС и PostgreSQL
 00. Мой github URL: https://github.com/aeuge/postgres19book
 01. Docker URL: https://www.docker.com/
-02. Что такое Kubernetes URL: https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/
-03. PostgreSQL 14. Оптимизация, Kubernetes, кластера, облака. - М.: ООО «Сам Полиграфист», 2022. - 576 с. URL: https://aristov.tech/PostgreSQL14preview.pdf
+02. PostgreSQL 14. Оптимизация, Kubernetes, кластера, облака. - М.: ООО «Сам Полиграфист», 2022. - 576 с. URL: https://aristov.tech/PostgreSQL14preview.pdf
+https://aristov.tech/blog/varianty-ustanovki-postgresql/
+03. блог arstov.tech URL:https://aristov.tech/blog
 04. SSD https://en.wikipedia.org/wiki/Solid-state_drive 
 05. NVMe https://en.wikipedia.org/wiki/NVM_Express 
 06. Ceph https://en.wikipedia.org/wiki/Ceph_(software) 
