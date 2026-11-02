@@ -127,45 +127,45 @@ sudo -u postgres pg_createcluster 16 main2 --datadir /newpostgres/data
 
 sudo -u postgres pg_ctlcluster 16 main2 start
 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
 
 -- для main2
-pg_ctlcluster 16 main2 start
+pg_ctlcluster 19 main2 start
 cd ~ && wget https://storage.googleapis.com/thaibus/thai_small.tar.gz && tar -xf thai_small.tar.gz && psql -p 5433 < thai.sql
 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -p 5433 -U postgres thai
 
 -- workload2
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -p 5433 -U postgres thai
 
 -- !!! перенос WAL файлов
 mkdir /newpostgres/wal
 
-pg_ctlcluster 16 main stop
-mv /var/lib/postgresql/16/main/pg_wal /newpostgres/wal
+pg_ctlcluster 19 main stop
+mv /var/lib/postgresql/19/main/pg_wal /newpostgres/wal
 
-ln -s /newpostgres/wal/pg_wal /var/lib/postgresql/16/main/pg_wal
+ln -s /newpostgres/wal/pg_wal /var/lib/postgresql/19/main/pg_wal
 ls /newpostgres/wal/pg_wal
-ls /var/lib/postgresql/16/main/pg_wal
+ls /var/lib/postgresql/19/main/pg_wal
 
-pg_ctlcluster 16 main start
+pg_ctlcluster 19 main start
 pg_lsclusters
 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
 

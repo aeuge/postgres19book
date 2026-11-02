@@ -1,7 +1,7 @@
 -- defult setting from https://pgconfigurator.cybertec.at/
 sudo su postgres
  
-cat >> /etc/postgresql/16/main/postgresql.conf << EOL
+cat >> /etc/postgresql/19/main/postgresql.conf << EOL
 shared_buffers = '4096 MB'
 work_mem = '32 MB'
 maintenance_work_mem = '320 MB'
@@ -54,4 +54,4 @@ track_wal_io_timing = on
 maintenance_io_concurrency = 100
 EOL
 
-pg_ctlcluster 16 main stop && pg_ctlcluster 16 main start
+pg_ctlcluster 19 main stop && pg_ctlcluster 19 main start

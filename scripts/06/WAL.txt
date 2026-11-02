@@ -101,7 +101,7 @@ SELECT setting, unit FROM pg_settings WHERE name = 'shared_buffers';
 ALTER SYSTEM SET shared_buffers = 300;
 
 -- рестартуем кластер после изменений
-pg_ctlcluster 16 main restart
+pg_ctlcluster 19 main restart
 
 DROP TABLE IF EXISTS test;
 CREATE TABLE test(i int);
@@ -170,7 +170,7 @@ SELECT * FROM pg_stat_checkpointer;
 
 -- Контрольные точки 
 -- посмотрим информацию о кластере
--- /usr/lib/postgresql/16/bin/pg_controldata /var/lib/postgresql/16/main/
+-- /usr/lib/postgresql/19/bin/pg_controldata /var/lib/postgresql/19/main/
 
 SELECT pg_current_wal_insert_lsn();
 CHECKPOINT;
@@ -178,7 +178,7 @@ SELECT pg_current_wal_insert_lsn();
 
 -- посмотрим какой у нас wal file
 SELECT pg_walfile_name('0/160B938');
-\! /usr/lib/postgresql/16/bin/pg_waldump -p /var/lib/postgresql/16/main/pg_wal -s 0/160B850 -e 0/160B938 000000010000000000000001
+\! /usr/lib/postgresql/19/bin/pg_waldump -p /var/lib/postgresql/19/main/pg_wal -s 0/160B850 -e 0/160B938 000000010000000000000001
 
 
 
@@ -189,16 +189,16 @@ INSERT INTO test SELECT s.id FROM generate_series(1,10000000) AS s(id);
 INSERT 0 10000000
 Time: 15719.725 ms (00:15.720)
 
-\! ls -la /var/lib/postgresql/16/main/pg_wal
+\! ls -la /var/lib/postgresql/19/main/pg_wal
 -- итого 32 сегмента по 16мб
 -- https://www.postgresql.org/docs/current/app-pgresetwal.html
-nano /etc/postgresql/16/main/postgresql.conf
+nano /etc/postgresql/19/main/postgresql.conf
 
 -- поменяем размер WAL файлов
--- tail /var/log/postgresql/postgresql-16-main.log
-pg_ctlcluster 16 main stop
-/usr/lib/postgresql/16/bin/pg_resetwal -f -D /var/lib/postgresql/16/main --wal-segsize=64
-pg_ctlcluster 16 main start
+-- tail /var/log/postgresql/postgresql-19-main.log
+pg_ctlcluster 19 main stop
+/usr/lib/postgresql/19/bin/pg_resetwal -f -D /var/lib/postgresql/19/main --wal-segsize=64
+pg_ctlcluster 19 main start
 
-/usr/lib/postgresql/16/bin/pg_resetwal -f -D /var/lib/postgresql/16/main --wal-segsize=8
+/usr/lib/postgresql/19/bin/pg_resetwal -f -D /var/lib/postgresql/19/main --wal-segsize=8
 

@@ -107,15 +107,15 @@ GRANT pg_monitor to pmm;
 
 -- Создадим расширение для мониторинга
 -- pg_stat_statements - устарело
-sudo percona-release setup ppg16
-sudo apt-get install percona-pg-stat-monitor16
+sudo percona-release setup ppg19
+sudo apt-get install percona-pg-stat-monitor19
 sudo -u postgres psql
 ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_monitor';
 ALTER SYSTEM SET track_io_timing = on;
 
 CREATE EXTENSION pg_stat_monitor;
 
-sudo pg_ctlcluster 16 main restart
+sudo pg_ctlcluster 19 main restart
 
 -- Putting database under monitoring
 sudo pmm-admin add postgresql --username=pmm --password=pmm123pmm pgtest

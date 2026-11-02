@@ -47,38 +47,38 @@ psql -c "DROP DATABASE thai;"
 cd ~ && wget https://storage.googleapis.com/thaibus/thai_medium.tar.gz && tar -xf thai_medium.tar.gz && psql < thai.sql
 
 -- в 1 клиента в 1 поток
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload.sql -U postgres thai
 -- 7500
 
 -- посмотрим на влияние оборачивания селекта в транзакцию
 -- должно быть в 2 раза меньше 
-/usr/lib/postgresql/16/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 1 -j 1 -T 10 -f ~/workload2.sql -U postgres thai
 -- 3500
 
 !!!! commit VS autocommit VS rollback
 
 -- 10 клиентов
 -- 4 потока по числу ядер
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload.sql -U postgres thai
 -- 24000
 
 -- 10 клиентов
 -- 4 потока по числу ядер
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload2.sql -U postgres thai
 -- 13500
 
 -- посмотрим autocommit
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload3.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload3.sql -U postgres thai
 --38000
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload4.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload4.sql -U postgres thai
 --19000
 
 -- разница c rollback
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload5.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload5.sql -U postgres thai
 --24000
 
-/usr/lib/postgresql/16/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload6.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 10 -j 4 -T 10 -f ~/workload6.sql -U postgres thai
 --14600
 
 -- FREEZE

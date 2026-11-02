@@ -65,7 +65,7 @@ cat > ~/workload.sql << EOL
 SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
 EOL 
 
-/usr/lib/postgresql/16/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload.sql -U postgres thai
+/usr/lib/postgresql/19/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload.sql -U postgres thai
 
 cat > ~/workload2.sql << EOL
 INSERT INTO book.tickets (fkRide, fio, contact, fkSeat)
@@ -77,8 +77,8 @@ VALUES (
     , ceil(random()*100));
 EOL
 
-/usr/lib/postgresql/16/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 5432 thai
+/usr/lib/postgresql/19/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 5432 thai
 
 psql -d thai -c "ALTER TABLE book.tickets ALTER COLUMN fio DROP NOT NULL;"
 
-/usr/lib/postgresql/16/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 5432 thai
+/usr/lib/postgresql/19/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 5432 thai
