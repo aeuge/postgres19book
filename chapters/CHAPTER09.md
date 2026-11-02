@@ -22,7 +22,7 @@
 21. Explain https://www.postgresql.org/docs/current/sql-explain.html 
 22. Sql anatomy https://sql-ex.ru/blogs/?/AnatomiJa_plana_zaprosa_v_PostgreSQL.html 
 23. Explain tensor https://explain.tensor.ru/ 
-34. Index scan https://www.postgresql.org/docs/current/indexam.html 
+24. Index scan https://www.postgresql.org/docs/current/indexam.html 
 25. Index scan хабр https://habr.com/ru/companies/postgrespro/articles/578196/ 
 26. Index scan vs. Bitmap scan vs. Sequential scan https://www.cybertec-postgresql.com/en/postgresql-indexing-index-scan-vs-bitmap-scan-vs-sequential-scan-basics/ 
 27. Seq scan https://habr.com/ru/companies/postgrespro/articles/576980/ 
