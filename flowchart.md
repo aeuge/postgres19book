@@ -1,3 +1,4 @@
+```mermaid
 flowchart TB
     Client([Клиенты / Приложения]) --> Router[GSLB / DNS / Connection String<br/>VIP1, VIP2, VIP3]
 
@@ -78,3 +79,4 @@ flowchart TB
 
     P1 & P2 <--> ETCD_DC1
     P3 <--> ETCD_DC2
+```
